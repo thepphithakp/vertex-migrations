@@ -133,16 +133,47 @@ jobs:
             -f values-prod.yaml \
             --set image.tag=${{ needs.build.outputs.tag }} \
             --set command=${{ inputs.command || 'migrate' }} \
-            ${{ steps.svc.outputs.args }} \
-            --wait --timeout 10m
+            ${{ steps.svc.outputs.args }}
 
-      # Job อาจสร้างสำเร็จแต่ Flyway ข้างในล้ม — ต้องอ่าน log ทุกครั้ง
+          rev=$(helm get metadata vertex-migrations -n vertex -o json | jq -r .version)
+          echo "REVISION=$rev" >> "$GITHUB_ENV"
+          echo "release revision = $rev"
+
+      # ⚠️ ไม่พึ่ง helm --wait
+      #
+      # helm --wait คืนค่าก่อน Job ทำงานเสร็จจริง (เจอมาแล้ว: helm จบใน 12 วินาที
+      # แต่ Job ใช้เวลา 18 วินาที ทำให้ขั้นตรวจผลอ่าน status ที่ยังว่างอยู่
+      # แล้วรายงานว่าล้มทั้งที่ migration สำเร็จ)
+      #
+      # เลือก Job ด้วย label revision ไม่ใช่ tail -N ซึ่งพังเมื่อจำนวน service เปลี่ยน
+      - name: รอ Job ให้จบจริง
+        run: |
+          sel="app.kubernetes.io/component=migration,vertex.io/release-revision=$REVISION"
+          deadline=$(( $(date +%s) + 600 ))
+
+          jobs=$(kubectl get jobs -n vertex -l "$sel" -o jsonpath='{.items[*].metadata.name}')
+          [ -n "$jobs" ] || { echo "🔴 ไม่พบ Job ของ revision $REVISION"; exit 1; }
+          echo "รอ: $jobs"
+
+          for job in $jobs; do
+            while :; do
+              ok=$(kubectl get job "$job" -n vertex -o jsonpath='{.status.succeeded}')
+              bad=$(kubectl get job "$job" -n vertex -o jsonpath='{.status.failed}')
+              [ "${ok:-0}" -ge 1 ] 2>/dev/null && { echo "  ✅ $job"; break; }
+              # backoffLimit ถูกใช้จนหมดแล้วถึงจะถือว่าล้มจริง
+              if [ "${bad:-0}" -gt "$(kubectl get job "$job" -n vertex -o jsonpath='{.spec.backoffLimit}')" ]; then
+                echo "  🔴 $job ล้ม"; break
+              fi
+              [ "$(date +%s)" -gt "$deadline" ] && { echo "  🔴 $job หมดเวลารอ"; break; }
+              sleep 5
+            done
+          done
+
       - name: แสดง log ของทุก Job
         if: always()
         run: |
-          for job in $(kubectl get jobs -n vertex \
-                        -l app.kubernetes.io/component=migration \
-                        -o name --sort-by=.metadata.creationTimestamp | tail -2); do
+          sel="app.kubernetes.io/component=migration,vertex.io/release-revision=$REVISION"
+          for job in $(kubectl get jobs -n vertex -l "$sel" -o name); do
             echo "::group::$job"
             kubectl logs -n vertex "$job" --tail=200 || true
             echo "::endgroup::"
@@ -150,12 +181,11 @@ jobs:
 
       - name: ตรวจว่าทุก Job สำเร็จ
         run: |
+          sel="app.kubernetes.io/component=migration,vertex.io/release-revision=$REVISION"
           failed=0
-          for job in $(kubectl get jobs -n vertex \
-                        -l app.kubernetes.io/component=migration \
-                        -o name --sort-by=.metadata.creationTimestamp | tail -2); do
+          for job in $(kubectl get jobs -n vertex -l "$sel" -o name); do
             ok=$(kubectl get "$job" -n vertex -o jsonpath='{.status.succeeded}')
-            if [ "$ok" != "1" ]; then
+            if [ "${ok:-0}" -lt 1 ] 2>/dev/null; then
               echo "🔴 $job ไม่สำเร็จ"
               failed=1
             fi

@@ -101,15 +101,22 @@ pipeline {
                             "--set services[${i}].enabled=${on}"
                         }.join(' ')
 
+                        // ⚠️ ไม่ใช้ --wait
+                        // helm --wait คืนค่าก่อน Job ทำงานเสร็จจริง (เจอมาแล้ว)
+                        // ให้ stage Verify รอเองด้วย label revision แทน
                         sh """
                             helm upgrade --install vertex-migrations ./helm/vertex-migrations \
                                 --namespace "$NAMESPACE" \
                                 -f values-prod.yaml \
                                 --set image.tag="$IMAGE_TAG" \
                                 --set command="${params.FLYWAY_COMMAND}" \
-                                ${flags} \
-                                --wait --timeout 10m
+                                ${flags}
                         """
+                        env.HELM_REVISION = sh(
+                            script: "helm get metadata vertex-migrations -n ${NAMESPACE} -o json | jq -r .version",
+                            returnStdout: true
+                        ).trim()
+                        echo "release revision = ${env.HELM_REVISION}"
                     }
                 }
             }
@@ -122,16 +129,33 @@ pipeline {
                     credentialsId: "kubeconfig-${params.ENVIRONMENT}",
                     variable: 'KUBECONFIG'
                 )]) {
-                    // Job สร้างสำเร็จไม่ได้แปลว่า Flyway ข้างในสำเร็จ ต้องตรวจ status
+                    // Job สร้างสำเร็จไม่ได้แปลว่า Flyway ข้างในสำเร็จ ต้องรอแล้วตรวจ status
+                    // เลือก Job ด้วย label revision ไม่ใช่ tail -N ซึ่งพังเมื่อจำนวน service เปลี่ยน
                     sh '''
+                        sel="app.kubernetes.io/component=migration,vertex.io/release-revision=$HELM_REVISION"
+                        deadline=$(( $(date +%s) + 600 ))
+
+                        jobs=$(kubectl get jobs -n "$NAMESPACE" -l "$sel" -o jsonpath='{.items[*].metadata.name}')
+                        [ -n "$jobs" ] || { echo "🔴 ไม่พบ Job ของ revision $HELM_REVISION"; exit 1; }
+
+                        for job in $jobs; do
+                            while :; do
+                                ok=$(kubectl get job "$job" -n "$NAMESPACE" -o jsonpath='{.status.succeeded}')
+                                bad=$(kubectl get job "$job" -n "$NAMESPACE" -o jsonpath='{.status.failed}')
+                                [ "${ok:-0}" -ge 1 ] 2>/dev/null && break
+                                limit=$(kubectl get job "$job" -n "$NAMESPACE" -o jsonpath='{.spec.backoffLimit}')
+                                [ "${bad:-0}" -gt "$limit" ] && break
+                                [ "$(date +%s)" -gt "$deadline" ] && break
+                                sleep 5
+                            done
+                        done
+
                         failed=0
-                        for job in $(kubectl get jobs -n "$NAMESPACE" \
-                                      -l app.kubernetes.io/component=migration \
-                                      -o name --sort-by=.metadata.creationTimestamp | tail -2); do
+                        for job in $jobs; do
                             echo "===== $job ====="
-                            kubectl logs -n "$NAMESPACE" "$job" --tail=200 || true
-                            ok=$(kubectl get "$job" -n "$NAMESPACE" -o jsonpath='{.status.succeeded}')
-                            if [ "$ok" != "1" ]; then
+                            kubectl logs -n "$NAMESPACE" "job/$job" --tail=200 || true
+                            ok=$(kubectl get job "$job" -n "$NAMESPACE" -o jsonpath='{.status.succeeded}')
+                            if [ "${ok:-0}" -lt 1 ] 2>/dev/null; then
                                 echo "🔴 $job ไม่สำเร็จ"
                                 failed=1
                             fi

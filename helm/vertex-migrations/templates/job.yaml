@@ -10,6 +10,9 @@ metadata:
   labels:
     {{- include "vertex-migrations.labels" $ | nindent 4 }}
     vertex.io/service: {{ .name }}
+    # ใช้เลือก Job ของ deploy รอบนี้โดยเฉพาะ
+    # ไม่งั้น CI ต้องเดาด้วย tail -N ซึ่งพังทันทีที่จำนวน service เปลี่ยน
+    vertex.io/release-revision: "{{ $.Release.Revision }}"
 spec:
   backoffLimit: {{ $.Values.backoffLimit }}
   activeDeadlineSeconds: {{ $.Values.activeDeadlineSeconds }}
