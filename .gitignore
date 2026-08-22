@@ -1,4 +1,26 @@
 .DS_Store
+
+# --- ของลับ ห้าม commit เด็ดขาด ---
+# repo นี้มี manifest ที่สร้าง ServiceAccount และ Secret
+# ไฟล์ที่ "ถูกสร้างออกมา" จากมันต้องไม่หลุดเข้า git
+kubeconfig*.yaml
+*.kubeconfig
+*.pem
+*.key
+!**/*.pub
+.env
+.env.*
+!.env.example
+
+# Secret ที่ยังไม่ได้เข้ารหัส — ถ้าใช้ SealedSecret ให้ commit เฉพาะไฟล์ที่ seal แล้ว
+secret-*.yaml
+*-secret.yaml
+!*-sealed.yaml
+
+# --- backup / dump ---
 *.dump
 *.sql.gz
 /backup/
+
+# --- ไฟล์ values ที่อาจมีค่าเฉพาะ environment ---
+values-local.yaml
