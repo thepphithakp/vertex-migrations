@@ -15,6 +15,8 @@ on:
       - 'auth/**'
       - 'helm/**'
       - 'Dockerfile'
+      # แก้ pipeline แล้วต้องได้ทดสอบทันที ไม่ใช่รอจนกว่าจะมีคนแก้ SQL
+      - '.github/workflows/deploy.yml'
   workflow_dispatch:
     inputs:
       environment:
