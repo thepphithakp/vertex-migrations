@@ -1,0 +1,26 @@
+# ค่าสำหรับ cluster production (k3s pluem-etoys)
+image:
+  tag: latest   # override ด้วย --set image.tag=sha-<commit> ตอน deploy
+
+db:
+  host: postgres
+  port: 5432
+  name: vertex_pet
+  sslMode: disable
+
+services:
+  - name: auth
+    enabled: true
+    schema: public
+    historyTable: flyway_schema_history_auth
+    credentialsSecret: auth-db-migrator
+    # baseline เสร็จแล้วเมื่อ 2026-08-22 — ปิดเพื่อไม่ให้เผลอ baseline database ผิดตัว
+    baselineOnMigrate: false
+
+  - name: pet
+    enabled: true
+    schema: pet
+    historyTable: flyway_schema_history
+    credentialsSecret: pet-db-migrator
+    # ตารางย้ายจาก public มาแล้ว → ต้อง baseline ที่ V1 เพื่อข้ามการสร้างตารางซ้ำ
+    baselineOnMigrate: true

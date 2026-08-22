@@ -1,0 +1,96 @@
+# =============================================================================
+# ServiceAccount สำหรับ CI/CD — จำกัดสิทธิ์ไว้ที่ namespace vertex เท่านั้น
+# =============================================================================
+# ใช้ Role + RoleBinding (ไม่ใช่ ClusterRole) โดยตั้งใจ
+# ทำให้ token ที่หลุดออกไปแตะ namespace อื่นหรือ resource ระดับ cluster ไม่ได้เลย
+#
+#   kubectl apply -f cluster/vertex-sa-rbac.yaml
+# =============================================================================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vertex-sa
+  namespace: vertex
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: vertex-ns-reader
+  namespace: vertex
+rules:
+  # ทรัพยากรหลักที่ helm ต้องจัดการ
+  # secrets จำเป็นเพราะ helm เก็บ release state ไว้ใน Secret
+  - apiGroups: [""]
+    resources:
+      - pods
+      - services
+      - configmaps
+      - secrets
+      - serviceaccounts
+      - persistentvolumeclaims
+    verbs: [get, list, watch, create, update, patch, delete]
+
+  # อ่านอย่างเดียว — ใช้ตอน kubectl logs และ describe
+  - apiGroups: [""]
+    resources: [pods/log, events]
+    verbs: [get, list, watch]
+
+  - apiGroups: [apps]
+    resources: [deployments, daemonsets, statefulsets, replicasets]
+    verbs: [get, list, watch, create, update, patch, delete]
+
+  # rollout restart / rollout status
+  - apiGroups: [apps]
+    resources: [deployments/scale, deployments/status]
+    verbs: [get, patch, update]
+
+  # Flyway migration job
+  - apiGroups: [batch]
+    resources: [jobs, cronjobs]
+    verbs: [get, list, watch, create, update, patch, delete]
+
+  - apiGroups: [networking.k8s.io]
+    resources: [ingresses]
+    verbs: [get, list, watch, create, update, patch, delete]
+
+  # เผื่ออนาคต — chart รองรับแล้วแต่ยังไม่เปิดใช้
+  - apiGroups: [policy]
+    resources: [poddisruptionbudgets]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [autoscaling]
+    resources: [horizontalpodautoscalers]
+    verbs: [get, list, watch, create, update, patch, delete]
+
+  # 🚫 จงใจไม่ให้: pods/exec, pods/portforward
+  #    สองอันนี้ทำให้เข้าไปรันคำสั่งใน container ได้ ซึ่ง CD ไม่จำเป็นต้องใช้
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: vertex-sa-binding
+  namespace: vertex
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: vertex-ns-reader
+subjects:
+  - kind: ServiceAccount
+    name: vertex-sa
+    namespace: vertex
+---
+# Secret ชนิดนี้ทำให้ได้ token ที่ "ไม่หมดอายุ"
+#
+# ตั้งแต่ Kubernetes 1.24 ServiceAccount ไม่มี Secret token ให้อัตโนมัติแล้ว
+# และ token ที่ออกผ่าน API (kubectl create token) มีอายุจำกัด
+# ซึ่งเป็นสาเหตุที่ KUBECONFIG_CONTENT เดิมหมดอายุแล้ว CD ใช้ไม่ได้
+#
+# ⚠️ token ที่ไม่หมดอายุแลกมาด้วยความเสี่ยง — ถ้าหลุดต้องลบ Secret นี้เพื่อเพิกถอน
+#    จึงยิ่งต้องจำกัดสิทธิ์ไว้ที่ namespace เดียวอย่างที่ทำข้างบน
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vertex-sa-token
+  namespace: vertex
+  annotations:
+    kubernetes.io/service-account.name: vertex-sa
+type: kubernetes.io/service-account-token

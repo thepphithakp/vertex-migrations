@@ -121,6 +121,25 @@ services:
     baselineOnMigrate: false
 ```
 
+### RBAC สำหรับ CI/CD
+
+`cluster/vertex-sa-rbac.yaml` สร้าง ServiceAccount ที่ CD ใช้ deploy
+พร้อม Role ที่**จำกัดไว้ที่ namespace เดียว**
+
+```bash
+kubectl apply -f cluster/vertex-sa-rbac.yaml
+```
+
+ใช้ `Role` ไม่ใช่ `ClusterRole` โดยตั้งใจ — token ที่หลุดออกไปแตะ namespace อื่น
+หรือ resource ระดับ cluster ไม่ได้เลย และจงใจไม่ให้ `pods/exec` เพราะ CD ไม่ต้องใช้
+
+Secret ชนิด `kubernetes.io/service-account-token` ทำให้ได้ token ที่ไม่หมดอายุ
+(ตั้งแต่ Kubernetes 1.24 ServiceAccount ไม่มี token ให้อัตโนมัติแล้ว
+และ token จาก `kubectl create token` มีอายุจำกัด — เป็นสาเหตุที่ CD เคยพังมาแล้ว)
+
+> ⚠️ token ที่ไม่หมดอายุแลกมาด้วยความเสี่ยง
+> ถ้าหลุดต้องเพิกถอนด้วย `kubectl delete secret vertex-sa-token -n vertex`
+
 ### สิ่งที่ต้องมีอยู่ก่อนใน cluster
 
 | ต้องมี | สร้างอย่างไร |
