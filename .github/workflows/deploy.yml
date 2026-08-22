@@ -1,0 +1,174 @@
+name: Deploy migrations
+
+# =============================================================================
+# รัน Flyway บน cluster ผ่าน helm chart ที่สร้าง Kubernetes Job
+# =============================================================================
+# ⚠️ ต้อง deploy migration ให้สำเร็จก่อน deploy service เสมอ
+#    ถ้า service ขึ้นก่อน AssertSchemaVersion จะทำให้มันล้มตั้งแต่ boot
+# =============================================================================
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'pet/**'
+      - 'auth/**'
+      - 'helm/**'
+      - 'Dockerfile'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'environment ที่จะ deploy'
+        required: true
+        default: production
+        type: choice
+        options: [production]
+      command:
+        description: 'คำสั่ง Flyway'
+        required: true
+        default: migrate
+        type: choice
+        # info    = ดูสถานะเฉยๆ ไม่แก้อะไร — ใช้ตรวจก่อนลงมือจริง
+        # validate= ตรวจ checksum ว่าไฟล์ที่ apply ไปแล้วไม่ถูกแก้
+        # repair  = ซ่อม history table หลัง migration ล้ม (ไม่ย้อนข้อมูล)
+        options: [migrate, info, validate, repair]
+      services:
+        description: 'service ที่จะรัน (คั่นด้วย comma หรือ all)'
+        required: true
+        default: all
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  build:
+    name: Build migration image
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint migration files
+        run: bash scripts/lint.sh
+
+      - id: meta
+        run: echo "tag=sha-${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          # cluster เป็น amd64 — build platform เดียวเพื่อไม่ให้เสียเวลา
+          platforms: linux/amd64
+          tags: |
+            ${{ env.IMAGE }}:sha-${{ github.sha }}
+            ${{ env.IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Run Flyway on cluster
+    needs: build
+    runs-on: ubuntu-latest
+    # ตั้ง protection rule ที่ Settings → Environments เพื่อบังคับให้มีคนกดอนุมัติก่อน
+    environment: ${{ inputs.environment || 'production' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup kubeconfig
+        env:
+          KUBECONFIG_CONTENT: ${{ secrets.KUBECONFIG_CONTENT }}
+        run: |
+          mkdir -p ~/.kube
+          # printf %s ไม่แปลง backslash ต่างจาก echo
+          printf '%s' "$KUBECONFIG_CONTENT" > ~/.kube/config
+          chmod 600 ~/.kube/config
+          grep -q 'apiVersion' ~/.kube/config || { echo "🔴 kubeconfig ไม่ valid"; exit 1; }
+          echo "KUBECONFIG=$HOME/.kube/config" >> "$GITHUB_ENV"
+
+      - uses: azure/setup-kubectl@v4
+        with:
+          version: v1.31.0
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.16.0
+
+      - name: เลือก service ที่จะรัน
+        id: svc
+        run: |
+          want="${{ inputs.services || 'all' }}"
+          args=""
+          i=0
+          for s in auth pet; do
+            enabled=false
+            if [ "$want" = "all" ] || echo "$want" | tr ',' '\n' | grep -qx "$s"; then
+              enabled=true
+            fi
+            args="$args --set services[$i].enabled=$enabled"
+            i=$((i+1))
+          done
+          echo "args=$args" >> "$GITHUB_OUTPUT"
+          echo "จะรัน: $want"
+
+      - name: Helm deploy
+        run: |
+          helm upgrade --install vertex-migrations ./helm/vertex-migrations \
+            --namespace vertex \
+            -f values-prod.yaml \
+            --set image.tag=${{ needs.build.outputs.tag }} \
+            --set command=${{ inputs.command || 'migrate' }} \
+            ${{ steps.svc.outputs.args }} \
+            --wait --timeout 10m
+
+      # Job อาจสร้างสำเร็จแต่ Flyway ข้างในล้ม — ต้องอ่าน log ทุกครั้ง
+      - name: แสดง log ของทุก Job
+        if: always()
+        run: |
+          for job in $(kubectl get jobs -n vertex \
+                        -l app.kubernetes.io/component=migration \
+                        -o name --sort-by=.metadata.creationTimestamp | tail -2); do
+            echo "::group::$job"
+            kubectl logs -n vertex "$job" --tail=200 || true
+            echo "::endgroup::"
+          done
+
+      - name: ตรวจว่าทุก Job สำเร็จ
+        run: |
+          failed=0
+          for job in $(kubectl get jobs -n vertex \
+                        -l app.kubernetes.io/component=migration \
+                        -o name --sort-by=.metadata.creationTimestamp | tail -2); do
+            ok=$(kubectl get "$job" -n vertex -o jsonpath='{.status.succeeded}')
+            if [ "$ok" != "1" ]; then
+              echo "🔴 $job ไม่สำเร็จ"
+              failed=1
+            fi
+          done
+          [ "$failed" = "0" ] && echo "✅ migration สำเร็จทั้งหมด"
+          exit $failed
+
+      - name: สรุปสถานะ schema
+        if: success()
+        run: |
+          echo "### Migration สำเร็จ" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "image: \`${{ needs.build.outputs.tag }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "command: \`${{ inputs.command || 'migrate' }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "⚠️ อย่าลืมอัปเดต \`migration.image.tag\` ใน helm values ของ service ที่เกี่ยวข้อง" >> "$GITHUB_STEP_SUMMARY"

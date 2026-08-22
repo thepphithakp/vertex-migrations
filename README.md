@@ -157,6 +157,47 @@ Secret ชนิด `kubernetes.io/service-account-token` ทำให้ได�
 
 ---
 
+## CI/CD
+
+| ไฟล์ | ใช้เมื่อ |
+|---|---|
+| `.github/workflows/ci.yml` | ทุก PR — lint, migrate บน DB เปล่า, รันซ้ำเช็ค idempotent, validate |
+| `.github/workflows/deploy.yml` | push main หรือกดเอง — build image แล้วรัน Flyway Job บน cluster |
+| `Jenkinsfile` | สำรองไว้ถ้าย้ายไป Jenkins — ทำงานเทียบเท่า deploy.yml |
+
+### รันเองแบบเลือกคำสั่งได้
+
+ทั้ง GitHub Actions และ Jenkins รับ parameter เหมือนกัน
+
+| parameter | ค่า | ความหมาย |
+|---|---|---|
+| `command` | `migrate` | รัน migration ที่ยังไม่ถูก apply |
+| | `info` | **ดูสถานะเฉยๆ ไม่แก้อะไร** — ใช้ตรวจก่อนลงมือจริง |
+| | `validate` | ตรวจ checksum ว่าไฟล์ที่ apply แล้วไม่ถูกแก้ |
+| | `repair` | ซ่อม history table หลัง migration ล้ม ⚠️ ไม่ย้อนข้อมูล |
+| `services` | `all` หรือ `pet,auth` | เลือกรันเฉพาะบาง service |
+
+```bash
+# ตรวจสถานะก่อนโดยไม่แตะอะไร
+gh workflow run deploy.yml -f command=info -f services=all
+
+# รัน migration เฉพาะ pet
+gh workflow run deploy.yml -f command=migrate -f services=pet
+```
+
+### สิ่งที่ต้องตั้งก่อนใช้
+
+| | GitHub Actions | Jenkins |
+|---|---|---|
+| kubeconfig | secret `KUBECONFIG_CONTENT` | credential file `kubeconfig-production` |
+| registry | ใช้ `GITHUB_TOKEN` อัตโนมัติ | credential `registry-creds` |
+| อนุมัติก่อน deploy | ตั้ง protection rule ที่ Settings → Environments | ใส่ `input` stage เพิ่ม |
+
+> 🔐 kubeconfig ควรใช้ ServiceAccount ที่จำกัดสิทธิ์ไว้ที่ namespace เดียว
+> ดู `cluster/vertex-sa-rbac.yaml`
+
+---
+
 ## คำสั่งที่ใช้บ่อย
 
 ```bash
