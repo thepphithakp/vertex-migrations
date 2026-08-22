@@ -113,7 +113,8 @@ pipeline {
                                 ${flags}
                         """
                         env.HELM_REVISION = sh(
-                            script: "helm get metadata vertex-migrations -n ${NAMESPACE} -o json | jq -r .version",
+                            // ⚠️ .version คือ chart version ไม่ใช่ release revision — ต้องใช้ .revision
+                            script: "helm get metadata vertex-migrations -n ${NAMESPACE} -o json | jq -r .revision",
                             returnStdout: true
                         ).trim()
                         echo "release revision = ${env.HELM_REVISION}"

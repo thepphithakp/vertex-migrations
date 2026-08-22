@@ -135,7 +135,9 @@ jobs:
             --set command=${{ inputs.command || 'migrate' }} \
             ${{ steps.svc.outputs.args }}
 
-          rev=$(helm get metadata vertex-migrations -n vertex -o json | jq -r .version)
+          # ⚠️ .version คือ chart version (0.1.0) ไม่ใช่ release revision
+          #    ต้องใช้ .revision — เคยพลาดมาแล้วทำให้หา Job ไม่เจอ
+          rev=$(helm get metadata vertex-migrations -n vertex -o json | jq -r .revision)
           echo "REVISION=$rev" >> "$GITHUB_ENV"
           echo "release revision = $rev"
 
