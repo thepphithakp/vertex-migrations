@@ -38,8 +38,8 @@ db:
 services:
   - name: auth
     enabled: true
-    schema: public
-    historyTable: flyway_schema_history_auth
+    schema: auth
+    historyTable: flyway_schema_history
     credentialsSecret: auth-db-migrator
     # database ที่มีข้อมูลอยู่แล้วและยังไม่มี history table
     # → baseline ที่ V1 แล้วข้าม V1 ไปรัน V2 ขึ้นไป

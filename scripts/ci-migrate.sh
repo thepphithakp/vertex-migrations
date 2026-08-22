@@ -10,7 +10,7 @@ CMD="${2:-migrate}"
 
 case "$SERVICE" in
   pet)  SCHEMA=pet;    TABLE=flyway_schema_history ;;
-  auth) SCHEMA=public; TABLE=flyway_schema_history_auth ;;
+  auth) SCHEMA=auth;   TABLE=flyway_schema_history ;;
   *)    echo "ไม่รู้จัก service: $SERVICE"; exit 1 ;;
 esac
 

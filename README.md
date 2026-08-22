@@ -65,13 +65,15 @@ rollback/        เอกสารว่าถ้าต้องถอยจะ
 
 | | pet | auth |
 |---|---|---|
-| `FLYWAY_SCHEMAS` | `pet` | `public` |
-| `FLYWAY_TABLE` | `flyway_schema_history` | `flyway_schema_history_auth` |
-| `FLYWAY_LOCATIONS` | `filesystem:/flyway/sql/pet/migration,filesystem:/flyway/sql/pet/codeowned` | `filesystem:/flyway/sql/auth/migration,filesystem:/flyway/sql/auth/codeowned` |
+| `FLYWAY_SCHEMAS` | `pet` | `auth` |
+| `FLYWAY_TABLE` | `flyway_schema_history` | `flyway_schema_history` |
+| `FLYWAY_LOCATIONS` | `filesystem:/flyway/sql/pet/migration,...` | `filesystem:/flyway/sql/auth/migration,...` |
 
-> auth ยังอยู่ schema `public` — การย้ายไป schema `auth` เป็นงานแยก
-> ระหว่างที่ยังใช้ database เดียวกัน ต้องใช้ `FLYWAY_TABLE` คนละชื่อ
-> ไม่งั้นสอง service จะแย่งกันเขียนตาราง history เดียวกัน
+ทั้งสองใช้ชื่อ history table เดียวกันได้ เพราะอยู่คนละ schema แล้ว
+
+> ⚠️ ตอน `event` ย้ายมา (Phase 10) ก็ใช้แพตเทิร์นเดียวกัน
+> **ตราบใดที่ service ไหนยังอยู่ `public` service นั้นต้องใช้ชื่อ history table
+> ที่ไม่ซ้ำกับตัวอื่น** ไม่งั้นจะแย่งกันเขียนตารางเดียวกัน
 
 ---
 

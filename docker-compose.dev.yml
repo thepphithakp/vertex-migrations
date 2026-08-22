@@ -35,7 +35,7 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
 
-  # auth — ยังอยู่ schema public จึงต้องใช้ history table คนละชื่อ
+  # auth — ย้ายมา schema auth แล้ว (Phase 9)
   flyway-auth:
     image: flyway/flyway:11-alpine
     command: migrate
@@ -46,9 +46,9 @@ services:
       FLYWAY_URL: jdbc:postgresql://postgres:5432/vertex
       FLYWAY_USER: vertex
       FLYWAY_PASSWORD: vertex
-      FLYWAY_SCHEMAS: public
-      FLYWAY_DEFAULT_SCHEMA: public
-      FLYWAY_TABLE: flyway_schema_history_auth
+      FLYWAY_SCHEMAS: auth
+      FLYWAY_DEFAULT_SCHEMA: auth
+      FLYWAY_TABLE: flyway_schema_history
       FLYWAY_LOCATIONS: filesystem:/flyway/sql/migration,filesystem:/flyway/sql/codeowned
       FLYWAY_BASELINE_ON_MIGRATE: "true"
       FLYWAY_BASELINE_VERSION: "1"

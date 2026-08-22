@@ -11,8 +11,8 @@ db:
 services:
   - name: auth
     enabled: true
-    schema: public
-    historyTable: flyway_schema_history_auth
+    schema: auth
+    historyTable: flyway_schema_history
     credentialsSecret: auth-db-migrator
     # baseline เสร็จแล้วเมื่อ 2026-08-22 — ปิดเพื่อไม่ให้เผลอ baseline database ผิดตัว
     baselineOnMigrate: false
