@@ -23,7 +23,7 @@ jobs:
         env:
           POSTGRES_USER: vertex
           POSTGRES_PASSWORD: vertex
-          POSTGRES_DB: vertex_pet
+          POSTGRES_DB: vertex
         ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U vertex"
@@ -55,7 +55,7 @@ jobs:
       - name: ตรวจว่า history table แยกกัน
         run: |
           export PGPASSWORD=vertex
-          got=$(psql -h localhost -U vertex -d vertex_pet -tAc \
+          got=$(psql -h localhost -U vertex -d vertex -tAc \
             "SELECT count(*) FROM information_schema.tables WHERE table_name LIKE 'flyway%'")
           [ "$got" = "2" ] || { echo "🔴 พบ flyway history $got ตาราง ต้องการ 2"; exit 1; }
 

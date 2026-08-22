@@ -14,7 +14,7 @@ case "$SERVICE" in
   *)    echo "ไม่รู้จัก service: $SERVICE"; exit 1 ;;
 esac
 
-DB_URL="${FLYWAY_URL:-jdbc:postgresql://localhost:5432/vertex_pet}"
+DB_URL="${FLYWAY_URL:-jdbc:postgresql://localhost:5432/vertex}"
 DB_USER="${FLYWAY_USER:-vertex}"
 DB_PASS="${FLYWAY_PASSWORD:-vertex}"
 

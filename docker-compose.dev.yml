@@ -4,11 +4,11 @@ services:
     environment:
       POSTGRES_USER: vertex
       POSTGRES_PASSWORD: vertex
-      POSTGRES_DB: vertex_pet
+      POSTGRES_DB: vertex
     ports: ["5432:5432"]
     volumes: [pgdata:/var/lib/postgresql/data]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vertex -d vertex_pet"]
+      test: ["CMD-SHELL", "pg_isready -U vertex -d vertex"]
       interval: 2s
       retries: 15
 
@@ -21,7 +21,7 @@ services:
       - ./pet/codeowned:/flyway/sql/codeowned:ro
       - ./pet/seed:/flyway/sql/seed:ro
     environment:
-      FLYWAY_URL: jdbc:postgresql://postgres:5432/vertex_pet
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/vertex
       FLYWAY_USER: vertex
       FLYWAY_PASSWORD: vertex
       FLYWAY_SCHEMAS: pet
@@ -43,7 +43,7 @@ services:
       - ./auth/migration:/flyway/sql/migration:ro
       - ./auth/codeowned:/flyway/sql/codeowned:ro
     environment:
-      FLYWAY_URL: jdbc:postgresql://postgres:5432/vertex_pet
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/vertex
       FLYWAY_USER: vertex
       FLYWAY_PASSWORD: vertex
       FLYWAY_SCHEMAS: public

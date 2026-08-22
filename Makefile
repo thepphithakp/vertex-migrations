@@ -2,7 +2,7 @@ SHELL := /bin/bash
 COMPOSE := docker compose -f docker-compose.dev.yml
 
 .DEFAULT_GOAL := help
-.PHONY: help db-up db-down db-reset migrate-pet migrate-auth info validate lint
+.PHONY: help db-up db-down db-reset migrate-pet migrate-auth info validate lint db-forward db-forward-stop
 
 help:
 	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -33,3 +33,9 @@ validate: ## ตรวจ checksum
 
 lint: ## ตรวจกฎพื้นฐานของไฟล์ migration
 	@bash scripts/lint.sh
+
+db-forward: ## เปิด tunnel ไป postgres ใน k8s สำหรับ DBeaver (localhost:15432)
+	@bash scripts/db-forward.sh -d
+
+db-forward-stop: ## ปิด tunnel
+	@bash scripts/db-forward.sh --stop

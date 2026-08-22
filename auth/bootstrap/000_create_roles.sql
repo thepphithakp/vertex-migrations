@@ -14,7 +14,7 @@ BEGIN
     END IF;
 END $$;
 
-GRANT CONNECT ON DATABASE vertex_pet TO auth_migrator;
+GRANT CONNECT ON DATABASE vertex TO auth_migrator;
 GRANT USAGE, CREATE ON SCHEMA public TO auth_migrator;
 
 -- ⚠️ GRANT ALL ไม่พอ — ALTER TABLE ต้องการ ownership ไม่ใช่แค่ privilege

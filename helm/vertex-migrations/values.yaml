@@ -26,7 +26,7 @@ command: migrate
 db:
   host: postgres
   port: 5432
-  name: vertex_pet
+  name: vertex
   sslMode: disable
 
 # --- service ที่จะ migrate -------------------------------------------------

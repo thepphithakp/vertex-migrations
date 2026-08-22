@@ -6,7 +6,7 @@ Database migration ของทุก service ใน Vertex รวมไว้�
 
 ## ทำไมถึงรวมไว้ที่เดียว
 
-ทุก service ใช้ database `vertex_pet` ตัวเดียวกัน การมี migration กระจายอยู่ 3 repo
+ทุก service ใช้ database `vertex` ตัวเดียวกัน การมี migration กระจายอยู่ 3 repo
 ที่ต่างก็แก้ database เดียวกัน ทำให้ไม่มีที่ไหนเลยที่เห็นภาพรวมของ schema ทั้งระบบ
 
 repo นี้แก้ปัญหานั้น — เปิดที่เดียวเห็นครบว่า database เปลี่ยนไปอย่างไรบ้าง
