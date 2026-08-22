@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  test:
+    name: Migrate & Verify
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: vertex
+          POSTGRES_PASSWORD: vertex
+          POSTGRES_DB: vertex_pet
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U vertex"
+          --health-interval 2s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint migration files
+        run: bash scripts/lint.sh
+
+      - name: Migrate auth
+        run: bash scripts/ci-migrate.sh auth
+
+      - name: Migrate pet
+        run: bash scripts/ci-migrate.sh pet
+
+      # รันซ้ำต้องไม่พัง — จับ R__ ที่ไม่ idempotent
+      - name: Migrate ซ้ำ (idempotent)
+        run: |
+          bash scripts/ci-migrate.sh auth
+          bash scripts/ci-migrate.sh pet
+
+      - name: Validate checksum
+        run: |
+          bash scripts/ci-migrate.sh auth validate
+          bash scripts/ci-migrate.sh pet validate
+
+      # ทั้งสอง service ใช้ database เดียวกัน history table ต้องแยกกันจริง
+      - name: ตรวจว่า history table แยกกัน
+        run: |
+          export PGPASSWORD=vertex
+          got=$(psql -h localhost -U vertex -d vertex_pet -tAc \
+            "SELECT count(*) FROM information_schema.tables WHERE table_name LIKE 'flyway%'")
+          [ "$got" = "2" ] || { echo "🔴 พบ flyway history $got ตาราง ต้องการ 2"; exit 1; }
+
+  build:
+    name: Build migration image
+    needs: test
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:sha-${{ github.sha }}
+            ${{ env.IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: บอก tag ที่ต้องเอาไปใส่ helm ของ service
+        run: |
+          echo "::notice::migration image พร้อมแล้ว: sha-${{ github.sha }}"
+          echo "::notice::อัปเดต migration.image.tag ใน helm values ของ service ที่เกี่ยวข้อง"

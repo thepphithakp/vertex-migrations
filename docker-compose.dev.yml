@@ -1,0 +1,61 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: vertex
+      POSTGRES_PASSWORD: vertex
+      POSTGRES_DB: vertex_pet
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vertex -d vertex_pet"]
+      interval: 2s
+      retries: 15
+
+  # pet — schema pet, รวม seed ข้อมูลตัวอย่างสำหรับ local
+  flyway-pet:
+    image: flyway/flyway:11-alpine
+    command: migrate
+    volumes:
+      - ./pet/migration:/flyway/sql/migration:ro
+      - ./pet/codeowned:/flyway/sql/codeowned:ro
+      - ./pet/seed:/flyway/sql/seed:ro
+    environment:
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/vertex_pet
+      FLYWAY_USER: vertex
+      FLYWAY_PASSWORD: vertex
+      FLYWAY_SCHEMAS: pet
+      FLYWAY_DEFAULT_SCHEMA: pet
+      FLYWAY_TABLE: flyway_schema_history
+      FLYWAY_LOCATIONS: filesystem:/flyway/sql/migration,filesystem:/flyway/sql/codeowned,filesystem:/flyway/sql/seed
+      FLYWAY_BASELINE_ON_MIGRATE: "true"
+      FLYWAY_BASELINE_VERSION: "1"
+      FLYWAY_CLEAN_DISABLED: "true"
+      FLYWAY_CONNECT_RETRIES: "20"
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  # auth — ยังอยู่ schema public จึงต้องใช้ history table คนละชื่อ
+  flyway-auth:
+    image: flyway/flyway:11-alpine
+    command: migrate
+    volumes:
+      - ./auth/migration:/flyway/sql/migration:ro
+      - ./auth/codeowned:/flyway/sql/codeowned:ro
+    environment:
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/vertex_pet
+      FLYWAY_USER: vertex
+      FLYWAY_PASSWORD: vertex
+      FLYWAY_SCHEMAS: public
+      FLYWAY_DEFAULT_SCHEMA: public
+      FLYWAY_TABLE: flyway_schema_history_auth
+      FLYWAY_LOCATIONS: filesystem:/flyway/sql/migration,filesystem:/flyway/sql/codeowned
+      FLYWAY_BASELINE_ON_MIGRATE: "true"
+      FLYWAY_BASELINE_VERSION: "1"
+      FLYWAY_CLEAN_DISABLED: "true"
+      FLYWAY_CONNECT_RETRIES: "20"
+    depends_on:
+      postgres: { condition: service_healthy }
+
+volumes:
+  pgdata:
