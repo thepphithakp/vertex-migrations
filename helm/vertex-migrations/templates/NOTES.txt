@@ -1,0 +1,23 @@
+Migration Job ถูกสร้างแล้วสำหรับ:
+{{- range .Values.services }}
+{{- if .enabled }}
+  - {{ .name }}  (schema {{ .schema }}, history {{ .historyTable }})
+{{- end }}
+{{- end }}
+
+คำสั่งที่รัน: {{ .Values.command }}
+image:        {{ .Values.image.repository }}:{{ .Values.image.tag }}
+
+ดูผล:
+  kubectl get jobs -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+{{- range .Values.services }}
+{{- if .enabled }}
+  kubectl logs -n {{ $.Release.Namespace }} job/{{ $.Release.Name }}-{{ .name }}{{ if $.Values.runOnEveryUpgrade }}-{{ $.Release.Revision }}{{ end }}
+{{- end }}
+{{- end }}
+
+⚠️ อย่าลืม: deploy chart นี้ให้สำเร็จก่อน แล้วค่อย deploy service
+   ถ้า service ขึ้นก่อน จะล้มตั้งแต่ boot พร้อมข้อความว่าต้องรัน migration ก่อน
+
+⚠️ หลัง baseline สำเร็จครั้งแรกแล้ว ควรตั้ง baselineOnMigrate: false
+   เพื่อไม่ให้เผลอ baseline database ผิดตัวในอนาคต

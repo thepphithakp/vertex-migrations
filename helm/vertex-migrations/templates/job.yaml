@@ -1,0 +1,89 @@
+{{- range .Values.services }}
+{{- if .enabled }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  # ใส่ revision ในชื่อเพื่อให้ helm upgrade สร้าง Job ใหม่ทุกครั้ง
+  # Job ที่มีอยู่แล้วแก้ spec ไม่ได้ ถ้าชื่อซ้ำ helm จะ error หรือไม่รันใหม่
+  name: {{ $.Release.Name }}-{{ .name }}{{ if $.Values.runOnEveryUpgrade }}-{{ $.Release.Revision }}{{ end }}
+  labels:
+    {{- include "vertex-migrations.labels" $ | nindent 4 }}
+    vertex.io/service: {{ .name }}
+spec:
+  backoffLimit: {{ $.Values.backoffLimit }}
+  activeDeadlineSeconds: {{ $.Values.activeDeadlineSeconds }}
+  ttlSecondsAfterFinished: {{ $.Values.ttlSecondsAfterFinished }}
+  template:
+    metadata:
+      labels:
+        {{- include "vertex-migrations.labels" $ | nindent 8 }}
+        vertex.io/service: {{ .name }}
+    spec:
+      restartPolicy: Never
+      {{- with $.Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml $.Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: flyway
+          image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          args: ["{{ $.Values.command }}"]
+          securityContext:
+            {{- toYaml $.Values.securityContext | nindent 12 }}
+          env:
+            - name: FLYWAY_URL
+              value: {{ include "vertex-migrations.jdbcUrl" $ | quote }}
+            - name: FLYWAY_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .credentialsSecret }}
+                  key: username
+            - name: FLYWAY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .credentialsSecret }}
+                  key: password
+            - name: FLYWAY_SCHEMAS
+              value: {{ .schema | quote }}
+            - name: FLYWAY_DEFAULT_SCHEMA
+              value: {{ .schema | quote }}
+            # ต้องคนละชื่อต่อ service ตราบใดที่ยังใช้ database เดียวกัน
+            - name: FLYWAY_TABLE
+              value: {{ .historyTable | quote }}
+            # image บรรจุ SQL ของทุก service — เลือกด้วย path ตรงนี้
+            # 🚫 ไม่รวม seed/ เพราะเป็นข้อมูลตัวอย่างสำหรับ local เท่านั้น
+            - name: FLYWAY_LOCATIONS
+              value: "filesystem:/flyway/sql/{{ .name }}/migration,filesystem:/flyway/sql/{{ .name }}/codeowned"
+            - name: FLYWAY_BASELINE_ON_MIGRATE
+              value: {{ .baselineOnMigrate | quote }}
+            - name: FLYWAY_BASELINE_VERSION
+              value: "1"
+            - name: FLYWAY_VALIDATE_ON_MIGRATE
+              value: "true"
+            - name: FLYWAY_OUT_OF_ORDER
+              value: "false"
+            # 🚫 ห้ามเปลี่ยนเป็น false เด็ดขาดในทุก environment
+            - name: FLYWAY_CLEAN_DISABLED
+              value: "true"
+            - name: FLYWAY_CONNECT_RETRIES
+              value: "20"
+          resources:
+            {{- toYaml $.Values.resources | nindent 12 }}
+      {{- with $.Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $.Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+{{- end }}

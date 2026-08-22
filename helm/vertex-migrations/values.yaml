@@ -1,0 +1,85 @@
+# =============================================================================
+# vertex-migrations — รัน Flyway เป็น Job
+# =============================================================================
+# chart นี้ deploy แยกจาก service โดยตั้งใจ
+#
+# ลำดับที่ต้องรักษาไว้เสมอ:  migration (chart นี้)  →  แล้วค่อย  →  app
+# ถ้าสลับลำดับ app จะล้มตั้งแต่ boot พร้อมข้อความว่าต้องรัน migration ก่อน
+# =============================================================================
+
+image:
+  repository: ghcr.io/thepphithakp/vertex-migrations
+  # ⚠️ ควรระบุ tag เป็น sha-<commit> เสมอบน production
+  #    latest ทำให้ไม่รู้ว่า schema ที่รันไปคือเวอร์ชันไหน
+  tag: latest
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+# คำสั่งที่ให้ Flyway รัน
+#   migrate  — ปกติ
+#   info     — ดูสถานะเฉยๆ ไม่แก้อะไร
+#   validate — ตรวจ checksum
+#   repair   — ซ่อม history table หลัง migration ล้ม (ไม่ย้อนข้อมูล)
+command: migrate
+
+db:
+  host: postgres
+  port: 5432
+  name: vertex_pet
+  sslMode: disable
+
+# --- service ที่จะ migrate -------------------------------------------------
+#
+# แต่ละตัวได้ Job ของตัวเอง ทำงานขนานกันได้เพราะคนละ schema
+#
+# ⚠️ historyTable ต้องไม่ซ้ำกัน ตราบใดที่ยังใช้ database เดียวกัน
+#    ไม่งั้นสอง service จะแย่งกันเขียนตาราง history เดียวกัน
+services:
+  - name: auth
+    enabled: true
+    schema: public
+    historyTable: flyway_schema_history_auth
+    credentialsSecret: auth-db-migrator
+    # database ที่มีข้อมูลอยู่แล้วและยังไม่มี history table
+    # → baseline ที่ V1 แล้วข้าม V1 ไปรัน V2 ขึ้นไป
+    # ⚠️ เปลี่ยนเป็น false หลัง baseline สำเร็จแล้ว
+    baselineOnMigrate: true
+
+  - name: pet
+    enabled: true
+    schema: pet
+    historyTable: flyway_schema_history
+    credentialsSecret: pet-db-migrator
+    baselineOnMigrate: true
+
+# ตั้งเป็น true เพื่อให้ Job รันใหม่ทุกครั้งที่ helm upgrade
+# ถ้า false Job จะถูกสร้างครั้งเดียวและไม่รันซ้ำจนกว่าจะลบทิ้ง
+runOnEveryUpgrade: true
+
+backoffLimit: 1
+activeDeadlineSeconds: 600
+ttlSecondsAfterFinished: 3600
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: ["ALL"]
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

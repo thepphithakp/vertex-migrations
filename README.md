@@ -75,6 +75,65 @@ rollback/        เอกสารว่าถ้าต้องถอยจะ
 
 ---
 
+## Deploy ขึ้น cluster
+
+Flyway รันเป็น **Kubernetes Job** ผ่าน helm chart ใน `helm/vertex-migrations`
+chart นี้แยกจาก service โดยตั้งใจ — deploy migration ก่อน แล้วค่อย deploy app
+
+```bash
+# ครั้งแรก (database มีข้อมูลอยู่แล้ว → baseline ที่ V1)
+helm upgrade --install vertex-migrations ./helm/vertex-migrations \
+  --namespace vertex \
+  --set image.tag=sha-<commit>
+
+# ดูผล
+kubectl get jobs -n vertex -l app.kubernetes.io/component=migration
+kubectl logs -n vertex job/vertex-migrations-pet-1
+
+# ดูสถานะเฉยๆ ไม่แก้อะไร
+helm upgrade vertex-migrations ./helm/vertex-migrations -n vertex \
+  --reuse-values --set command=info
+```
+
+### ใช้กับ cluster อื่น
+
+chart รับค่าทั้งหมดผ่าน values จึงย้าย cluster ได้ด้วยการเปลี่ยนไฟล์ values อย่างเดียว
+
+```yaml
+# values-staging.yaml
+db:
+  host: postgres.staging.svc.cluster.local
+  sslMode: require
+image:
+  tag: sha-abc1234
+services:
+  - name: auth
+    enabled: true
+    schema: public
+    historyTable: flyway_schema_history_auth
+    credentialsSecret: auth-db-migrator
+    baselineOnMigrate: false   # cluster ใหม่ที่ database เปล่า ไม่ต้อง baseline
+  - name: pet
+    enabled: true
+    schema: pet
+    historyTable: flyway_schema_history
+    credentialsSecret: pet-db-migrator
+    baselineOnMigrate: false
+```
+
+### สิ่งที่ต้องมีอยู่ก่อนใน cluster
+
+| ต้องมี | สร้างอย่างไร |
+|---|---|
+| Secret `pet-db-migrator` / `auth-db-migrator` (key: username, password) | สร้างจาก DB role ที่มีสิทธิ์ DDL |
+| DB role ที่มีสิทธิ์ DDL | `pet/bootstrap/000_create_roles.sql` |
+| schema `pet` + ตารางที่ย้ายมาแล้ว (เฉพาะ cluster ที่มีข้อมูลเดิม) | `pet/bootstrap/001_move_to_pet_schema.sql` |
+
+> ⚠️ `bootstrap/` ไม่ได้อยู่ใน image และไม่ได้รันโดย Job
+> เป็น script ที่รันด้วยมือครั้งเดียวตอนตั้งระบบ ต้องมี backup ก่อนเสมอ
+
+---
+
 ## คำสั่งที่ใช้บ่อย
 
 ```bash
