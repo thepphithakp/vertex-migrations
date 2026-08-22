@@ -126,9 +126,13 @@ services:
 | ต้องมี | สร้างอย่างไร |
 |---|---|
 | Secret `pet-db-migrator` / `auth-db-migrator` (key: username, password) | สร้างจาก DB role ที่มีสิทธิ์ DDL |
-| DB role ที่มีสิทธิ์ DDL | `pet/bootstrap/000_create_roles.sql` |
+| DB role ที่มีสิทธิ์ DDL **และเป็นเจ้าของตาราง** | `pet/bootstrap/000_create_roles.sql`, `auth/bootstrap/000_create_roles.sql` |
 | schema `pet` + ตารางที่ย้ายมาแล้ว (เฉพาะ cluster ที่มีข้อมูลเดิม) | `pet/bootstrap/001_move_to_pet_schema.sql` |
 
+> ⚠️ **`GRANT ALL` ไม่พอ** — `ALTER TABLE` ต้องการ *ownership* ไม่ใช่แค่ privilege
+> ถ้า cluster มีตารางอยู่แล้วและเป็นของ role อื่น migration จะล้มด้วย
+> `must be owner of table ...` — script ใน `bootstrap/` โอน ownership ให้แล้ว
+>
 > ⚠️ `bootstrap/` ไม่ได้อยู่ใน image และไม่ได้รันโดย Job
 > เป็น script ที่รันด้วยมือครั้งเดียวตอนตั้งระบบ ต้องมี backup ก่อนเสมอ
 

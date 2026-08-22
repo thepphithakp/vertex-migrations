@@ -18,6 +18,30 @@ BEGIN
     END IF;
 END $$;
 
+-- ⚠️ GRANT ALL ไม่พอสำหรับ Flyway
+--
+-- ALTER TABLE ต้องการ "ownership" ไม่ใช่แค่ privilege
+-- ถ้าตารางเป็นของ role อื่นอยู่ migration ที่มี ALTER TABLE จะล้มด้วย
+--   ERROR: must be owner of table <ชื่อตาราง>
+--
+-- จึงต้องโอน ownership ให้ migrator ของแต่ละ service
+-- (เจอปัญหานี้จริงตอน migrate production ครั้งแรก)
+--
+-- 🔸 รันเฉพาะ cluster ที่มีตารางอยู่แล้ว — cluster ใหม่ที่ Flyway สร้างตารางเอง
+--    ตารางจะเป็นของ migrator ตั้งแต่แรกอยู่แล้ว
+DO $$
+DECLARE t text;
+BEGIN
+    FOREACH t IN ARRAY ARRAY['pets','pet_permissions','pet_caregivers',
+                             'caregiver_permissions','litter_logs','water_logs']
+    LOOP
+        IF EXISTS (SELECT 1 FROM pg_tables WHERE tablename = t) THEN
+            EXECUTE format('ALTER TABLE %I OWNER TO pet_migrator', t);
+            RAISE NOTICE 'โอน % ให้ pet_migrator', t;
+        END IF;
+    END LOOP;
+END $$;
+
 -- pet_migrator: มีสิทธิ์ DDL ใช้เฉพาะ Flyway Job
 -- pet_app:      DML เท่านั้น ใช้ใน runtime
 --
