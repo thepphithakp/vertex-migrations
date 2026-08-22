@@ -61,6 +61,16 @@ rules:
     resources: [horizontalpodautoscalers]
     verbs: [get, list, watch, create, update, patch, delete]
 
+  # ServiceMonitor ให้ Prometheus Operator มาดึง /metrics
+  #
+  # ถ้าไม่ให้สิทธิ์ helm upgrade จะล้มทั้ง release ด้วยข้อความ
+  # "rendered manifests contain a resource that already exists"
+  # ซึ่งชวนเข้าใจผิด สาเหตุจริงคือ helm get resource นั้นไม่ได้ เลยเดาไม่ออก
+  # ว่าใครเป็นเจ้าของ
+  - apiGroups: [monitoring.coreos.com]
+    resources: [servicemonitors]
+    verbs: [get, list, watch, create, update, patch, delete]
+
   # 🚫 จงใจไม่ให้: pods/exec, pods/portforward
   #    สองอันนี้ทำให้เข้าไปรันคำสั่งใน container ได้ ซึ่ง CD ไม่จำเป็นต้องใช้
 ---
