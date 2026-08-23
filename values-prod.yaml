@@ -36,11 +36,9 @@ services:
     schema: event
     historyTable: flyway_schema_history
     credentialsSecret: event-db-migrator
-    # เปิดชั่วคราวสำหรับการ baseline ครั้งแรก (2026-08-23)
+    # ปิดแล้วหลัง baseline สำเร็จ (2026-08-23) — history มี V1, V2 ครบ
     #
-    # ตารางถูกย้ายจาก public มา event ด้วย bootstrap/001 แล้ว
-    # Flyway ต้อง baseline ที่ V1 เพื่อข้ามการสร้างตารางซ้ำ แล้วรัน V2 ต่อ
-    #
-    # 🔸 ปิดกลับเป็น false ทันทีที่ baseline สำเร็จ — ไม่งั้นวันไหน history table
-    #    หาย Flyway จะ baseline ที่ V1 แล้วข้าม V2 เงียบๆ โดยไม่ error
-    baselineOnMigrate: true
+    # เปิดไว้ตอนย้ายตารางจาก public มา event เพื่อให้ Flyway baseline ที่ V1
+    # แล้วข้ามการสร้างตารางซ้ำ ถ้าปล่อยเป็น true ไว้ วันไหน history table หาย
+    # Flyway จะ baseline ที่ V1 แล้วข้าม V2 เงียบๆ โดยไม่ error
+    baselineOnMigrate: false

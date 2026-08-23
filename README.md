@@ -225,3 +225,23 @@ make db-reset         # ล้างแล้วสร้างใหม่
    ใช้ FOREIGN KEY แบบ `NOT VALID` แทน
 4. **ชื่อตารางที่ GORM สร้างอาจไม่ตรงกับที่คิด** — `OAuthIdentity` กลายเป็น
    `o_auth_identities` ไม่ใช่ `oauth_identities` ตรวจกับฐานข้อมูลจริงเสมอ
+
+## ข้อควรระวังตอนเขียน migration
+
+### เปลี่ยนชนิดคอลัมน์ = ต้อง rollout restart pod หลัง migrate
+
+`ALTER COLUMN ... TYPE ...` ทำให้ prepared statement ที่ pod เดิม cache ไว้ใช้ไม่ได้
+PostgreSQL จะตอบ `cached plan must not change result type` (SQLSTATE 0A000)
+กับทุก query จนกว่า connection จะถูกสร้างใหม่ — pod ที่รันอยู่จะ 500 ทั้งหมด
+
+เกิดขึ้นจริงตอน `event` V2 เปลี่ยน `id` จาก text เป็น uuid (2026-08-23)
+แก้ด้วย `kubectl rollout restart deploy/<service> -n vertex`
+
+ถ้าห้าม downtime ให้ทำแบบสองเฟสแทน: เพิ่มคอลัมน์ใหม่ → ให้แอปเขียนทั้งสองที่ →
+ย้ายข้อมูล → เปลี่ยนให้แอปอ่านคอลัมน์ใหม่ → ค่อยลบคอลัมน์เก่า
+
+### ห้ามแก้ไฟล์ `V__` ที่ถูก apply ไปแล้ว
+
+Flyway เก็บ checksum ของทุก migration ที่รันไปแล้ว แก้ไฟล์แม้แต่คอมเมนต์
+จะทำให้ `validate` ล้มด้วย `Migration checksum mismatch` แล้ว deploy รอบถัดไปพัง
+ต้องการเปลี่ยนอะไรให้เขียน `V__` ตัวใหม่เสมอ
