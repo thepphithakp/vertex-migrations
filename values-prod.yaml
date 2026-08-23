@@ -30,3 +30,17 @@ services:
     # Flyway จะ baseline ที่ V1 แล้ว "ข้าม V2–V8 เงียบๆ" โดยไม่ error
     # เหลือ schema ที่ไม่ครบโดยไม่มีสัญญาณเตือน
     baselineOnMigrate: false
+
+  - name: event
+    enabled: true
+    schema: event
+    historyTable: flyway_schema_history
+    credentialsSecret: event-db-migrator
+    # เปิดชั่วคราวสำหรับการ baseline ครั้งแรก (2026-08-23)
+    #
+    # ตารางถูกย้ายจาก public มา event ด้วย bootstrap/001 แล้ว
+    # Flyway ต้อง baseline ที่ V1 เพื่อข้ามการสร้างตารางซ้ำ แล้วรัน V2 ต่อ
+    #
+    # 🔸 ปิดกลับเป็น false ทันทีที่ baseline สำเร็จ — ไม่งั้นวันไหน history table
+    #    หาย Flyway จะ baseline ที่ V1 แล้วข้าม V2 เงียบๆ โดยไม่ error
+    baselineOnMigrate: true
