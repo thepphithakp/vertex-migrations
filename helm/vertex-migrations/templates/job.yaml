@@ -65,6 +65,13 @@ spec:
               value: {{ .baselineOnMigrate | quote }}
             - name: FLYWAY_BASELINE_VERSION
               value: "1"
+            # ไม่มีไฟล์ SQL ให้รัน = ตั้งค่าผิด ไม่ใช่ "ไม่มีอะไรต้องทำ"
+            #
+            # ค่า default ของ Flyway คือแค่พิมพ์ ERROR แล้วไปต่อจน exit 0
+            # ทำให้ Job ขึ้น Complete ทั้งที่ไม่ได้ apply migration เลย
+            # (เจอจริงตอนเพิ่ม event แล้วลืม COPY ใน Dockerfile)
+            - name: FLYWAY_FAIL_ON_MISSING_LOCATIONS
+              value: "true"
             - name: FLYWAY_VALIDATE_ON_MIGRATE
               value: "true"
             - name: FLYWAY_OUT_OF_ORDER

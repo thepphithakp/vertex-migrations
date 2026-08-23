@@ -1,0 +1,5 @@
+# โฟลเดอร์นี้ต้องมีอยู่แม้ยังไม่มีไฟล์ R__ ของ event
+#
+# เหตุผลสองข้อ:
+#   1. git ไม่เก็บโฟลเดอร์ว่าง ถ้าไม่มีไฟล์นี้ COPY ใน Dockerfile จะล้มตอน build บน CI
+#   2. FLYWAY_FAIL_ON_MISSING_LOCATIONS=true ทำให้ Job ล้มถ้า location หายไป
