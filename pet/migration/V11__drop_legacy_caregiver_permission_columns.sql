@@ -22,17 +22,32 @@
 -- (scripts/verify-schema.sh)
 -- =============================================================================
 
--- ย้ายข้อมูลที่อาจอยู่ในคอลัมน์เก่ามาไว้ในคอลัมน์ใหม่ก่อน
+-- ⚠️ ต้องห่อด้วย DO block ที่เช็คว่าคอลัมน์มีอยู่จริง
 --
--- ตอนเขียน migration นี้ production มี 0 แถว แต่เขียนเผื่อไว้
--- เพราะ environment อื่นอาจมีข้อมูลค้างอยู่
-UPDATE caregiver_permissions
-SET caregiver_model_id = pet_caregiver_id
-WHERE caregiver_model_id IS NULL AND pet_caregiver_id IS NOT NULL;
-
-UPDATE caregiver_permissions
-SET permission_model_id = pet_permission_id
-WHERE permission_model_id IS NULL AND pet_permission_id IS NOT NULL;
+-- database เปล่าไม่เคยมีคอลัมน์ชุดเก่า (V1 สร้างเฉพาะชุดใหม่)
+-- ถ้าเขียน UPDATE อ้างคอลัมน์นั้นตรงๆ PostgreSQL จะ parse ไม่ผ่านแล้วล้ม
+-- ทั้ง migration ตอนติดตั้ง cluster ใหม่ — ทั้งที่ไม่มีอะไรต้องย้ายเลย
+--
+-- migration ที่ล้างซากต้องทำงานได้ทั้งบน database ที่มีซากและที่ไม่มี
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'caregiver_permissions' AND column_name = 'pet_caregiver_id'
+    ) THEN
+        -- ย้ายข้อมูลที่อาจอยู่ในคอลัมน์เก่ามาไว้ในคอลัมน์ใหม่ก่อน
+        EXECUTE $sql$
+            UPDATE caregiver_permissions
+            SET caregiver_model_id = pet_caregiver_id
+            WHERE caregiver_model_id IS NULL AND pet_caregiver_id IS NOT NULL
+        $sql$;
+        EXECUTE $sql$
+            UPDATE caregiver_permissions
+            SET permission_model_id = pet_permission_id
+            WHERE permission_model_id IS NULL AND pet_permission_id IS NOT NULL
+        $sql$;
+    END IF;
+END $$;
 
 -- ทิ้งแถวที่ยังไม่มีคอลัมน์ใหม่ครบ — เป็นข้อมูลที่โค้ดปัจจุบันอ่านไม่เห็นอยู่แล้ว
 DELETE FROM caregiver_permissions

@@ -1,8 +1,6 @@
 --- columns ---
-caregiver_permissions|caregiver_model_id|uuid|YES|gen_random_uuid()
-caregiver_permissions|permission_model_id|text|YES|-
-caregiver_permissions|pet_caregiver_id|uuid|NO|gen_random_uuid()
-caregiver_permissions|pet_permission_id|text|NO|-
+caregiver_permissions|caregiver_model_id|uuid|NO|-
+caregiver_permissions|permission_model_id|text|NO|-
 event_outbox|action|text|NO|-
 event_outbox|actor_id|text|YES|-
 event_outbox|actor_username|text|YES|-
@@ -132,7 +130,7 @@ water_logs|pet_id|uuid|NO|-
 water_logs|updated_at|timestamp with time zone|YES|-
 water_logs|updated_by|text|YES|-
 --- indexes ---
-caregiver_permissions_pkey|CREATE UNIQUE INDEX caregiver_permissions_pkey ON caregiver_permissions USING btree (pet_caregiver_id, pet_permission_id)
+caregiver_permissions_pkey|CREATE UNIQUE INDEX caregiver_permissions_pkey ON caregiver_permissions USING btree (caregiver_model_id, permission_model_id)
 event_outbox_pkey|CREATE UNIQUE INDEX event_outbox_pkey ON event_outbox USING btree (id)
 idx_litter_logs_deleted_at|CREATE INDEX idx_litter_logs_deleted_at ON litter_logs USING btree (deleted_at)
 idx_litter_logs_pet_id|CREATE INDEX idx_litter_logs_pet_id ON litter_logs USING btree (pet_id)
@@ -168,20 +166,17 @@ pets_pkey|CREATE UNIQUE INDEX pets_pkey ON pets USING btree (id)
 role_capabilities_pkey|CREATE UNIQUE INDEX role_capabilities_pkey ON role_capabilities USING btree (role_code, capability)
 water_logs_pkey|CREATE UNIQUE INDEX water_logs_pkey ON water_logs USING btree (id)
 --- constraints ---
-caregiver_permissions_pkey|p|PRIMARY KEY (pet_caregiver_id, pet_permission_id)
+caregiver_permissions_pkey|p|PRIMARY KEY (caregiver_model_id, permission_model_id)
 chk_litter_amount|c|CHECK ((amount > 0))
 chk_water_amount|c|CHECK ((amount > 0))
 event_outbox_pkey|p|PRIMARY KEY (id)
-fk_caregiver_permissions_caregiver_model|f|FOREIGN KEY (caregiver_model_id) REFERENCES pet.pet_caregivers(id) ON DELETE CASCADE
-fk_caregiver_permissions_permission_model|f|FOREIGN KEY (permission_model_id) REFERENCES pet.pet_permissions(id) ON DELETE CASCADE
-fk_caregiver_permissions_pet_caregiver|f|FOREIGN KEY (pet_caregiver_id) REFERENCES pet.pet_caregivers(id) ON DELETE CASCADE
-fk_caregiver_permissions_pet_permission|f|FOREIGN KEY (pet_permission_id) REFERENCES pet.pet_permissions(id) ON DELETE CASCADE
+fk_caregiver_permissions_caregiver|f|FOREIGN KEY (caregiver_model_id) REFERENCES pet.pet_caregivers(id) ON DELETE CASCADE
+fk_caregiver_permissions_permission|f|FOREIGN KEY (permission_model_id) REFERENCES pet.pet_permissions(id) ON DELETE CASCADE
 fk_litter_logs_pet|f|FOREIGN KEY (pet_id) REFERENCES pet.pets(id) ON DELETE CASCADE
 fk_litter_logs_type|f|FOREIGN KEY (type) REFERENCES pet.mst_litter_types(code) NOT VALID
 fk_mst_cat_breeds_species|f|FOREIGN KEY (species_code) REFERENCES pet.mst_species(code)
 fk_pets_caregivers|f|FOREIGN KEY (pet_id) REFERENCES pet.pets(id) ON DELETE CASCADE
 fk_pets_gender|f|FOREIGN KEY (gender) REFERENCES pet.mst_genders(code) NOT VALID
-fk_pets_litter_logs|f|FOREIGN KEY (pet_id) REFERENCES pet.pets(id) ON DELETE CASCADE
 fk_pets_species|f|FOREIGN KEY (species) REFERENCES pet.mst_species(code) NOT VALID
 fk_water_logs_pet|f|FOREIGN KEY (pet_id) REFERENCES pet.pets(id) ON DELETE CASCADE
 flyway_schema_history_pk|p|PRIMARY KEY (installed_rank)
