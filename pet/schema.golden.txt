@@ -1,0 +1,201 @@
+--- columns ---
+caregiver_permissions|caregiver_model_id|uuid|YES|gen_random_uuid()
+caregiver_permissions|permission_model_id|text|YES|-
+caregiver_permissions|pet_caregiver_id|uuid|NO|gen_random_uuid()
+caregiver_permissions|pet_permission_id|text|NO|-
+event_outbox|action|text|NO|-
+event_outbox|actor_id|text|YES|-
+event_outbox|actor_username|text|YES|-
+event_outbox|attempts|integer|NO|0
+event_outbox|created_at|timestamp with time zone|NO|now()
+event_outbox|entity_id|text|YES|-
+event_outbox|entity_type|text|YES|-
+event_outbox|event_type|text|NO|-
+event_outbox|idempotency_key|text|NO|-
+event_outbox|id|uuid|NO|-
+event_outbox|last_error|text|YES|-
+event_outbox|next_attempt_at|timestamp with time zone|NO|now()
+event_outbox|payload|jsonb|YES|-
+event_outbox|published_at|timestamp with time zone|YES|-
+litter_logs|amount|bigint|YES|-
+litter_logs|created_at|timestamp with time zone|YES|-
+litter_logs|created_by|text|YES|-
+litter_logs|date|timestamp with time zone|YES|-
+litter_logs|deleted_at|timestamp with time zone|YES|-
+litter_logs|id|uuid|NO|gen_random_uuid()
+litter_logs|is_active|boolean|YES|true
+litter_logs|pet_id|uuid|NO|-
+litter_logs|type|text|YES|-
+litter_logs|updated_at|timestamp with time zone|YES|-
+litter_logs|updated_by|text|YES|-
+mst_blood_types|code|character varying|NO|-
+mst_blood_types|created_at|timestamp with time zone|NO|now()
+mst_blood_types|created_by|uuid|YES|-
+mst_blood_types|is_active|boolean|NO|true
+mst_blood_types|legacy_label|character varying|YES|-
+mst_blood_types|name_en|character varying|NO|-
+mst_blood_types|name_th|character varying|YES|-
+mst_blood_types|sort_order|integer|NO|0
+mst_blood_types|updated_at|timestamp with time zone|NO|now()
+mst_blood_types|updated_by|uuid|YES|-
+mst_blood_types|version|integer|NO|1
+mst_cat_breeds|code|character varying|NO|-
+mst_cat_breeds|created_at|timestamp with time zone|NO|now()
+mst_cat_breeds|created_by|uuid|YES|-
+mst_cat_breeds|is_active|boolean|NO|true
+mst_cat_breeds|legacy_label|character varying|YES|-
+mst_cat_breeds|name_en|character varying|NO|-
+mst_cat_breeds|name_th|character varying|YES|-
+mst_cat_breeds|sort_order|integer|NO|0
+mst_cat_breeds|species_code|character varying|NO|-
+mst_cat_breeds|updated_at|timestamp with time zone|NO|now()
+mst_cat_breeds|updated_by|uuid|YES|-
+mst_cat_breeds|version|integer|NO|1
+mst_genders|code|character varying|NO|-
+mst_genders|created_at|timestamp with time zone|NO|now()
+mst_genders|created_by|uuid|YES|-
+mst_genders|is_active|boolean|NO|true
+mst_genders|name_en|character varying|NO|-
+mst_genders|name_th|character varying|YES|-
+mst_genders|sort_order|integer|NO|0
+mst_genders|updated_at|timestamp with time zone|NO|now()
+mst_genders|updated_by|uuid|YES|-
+mst_genders|version|integer|NO|1
+mst_litter_types|code|character varying|NO|-
+mst_litter_types|created_at|timestamp with time zone|NO|now()
+mst_litter_types|created_by|uuid|YES|-
+mst_litter_types|is_active|boolean|NO|true
+mst_litter_types|name_en|character varying|NO|-
+mst_litter_types|name_th|character varying|YES|-
+mst_litter_types|sort_order|integer|NO|0
+mst_litter_types|updated_at|timestamp with time zone|NO|now()
+mst_litter_types|updated_by|uuid|YES|-
+mst_litter_types|version|integer|NO|1
+mst_species|code|character varying|NO|-
+mst_species|created_at|timestamp with time zone|NO|now()
+mst_species|created_by|uuid|YES|-
+mst_species|is_active|boolean|NO|true
+mst_species|name_en|character varying|NO|-
+mst_species|name_th|character varying|YES|-
+mst_species|sort_order|integer|NO|0
+mst_species|updated_at|timestamp with time zone|NO|now()
+mst_species|updated_by|uuid|YES|-
+mst_species|version|integer|NO|1
+orphaned_logs_quarantine|id|bigint|NO|nextval('pet.orphaned_logs_quarantine_id_seq'::regclass)
+orphaned_logs_quarantine|quarantined_at|timestamp with time zone|NO|now()
+orphaned_logs_quarantine|reason|text|NO|-
+orphaned_logs_quarantine|row_data|jsonb|NO|-
+orphaned_logs_quarantine|source_table|text|NO|-
+pet_caregivers|created_at|timestamp with time zone|YES|-
+pet_caregivers|created_by|text|YES|-
+pet_caregivers|deleted_at|timestamp with time zone|YES|-
+pet_caregivers|id|uuid|NO|gen_random_uuid()
+pet_caregivers|pet_id|uuid|NO|-
+pet_caregivers|updated_at|timestamp with time zone|YES|-
+pet_caregivers|updated_by|text|YES|-
+pet_caregivers|user_id|uuid|NO|-
+pet_permissions|description|text|YES|-
+pet_permissions|id|text|NO|-
+pet_permissions|is_active|boolean|YES|true
+pet_permissions|name|text|YES|-
+pets|allergies|text|YES|-
+pets|avatar_data|bytea|YES|-
+pets|birth_date|timestamp with time zone|YES|-
+pets|blood_type|text|YES|-
+pets|breed|text|YES|-
+pets|color_code|text|YES|-
+pets|created_at|timestamp with time zone|YES|-
+pets|created_by|text|YES|-
+pets|current_weight|numeric|YES|-
+pets|deleted_at|timestamp with time zone|YES|-
+pets|gender|text|YES|-
+pets|id|uuid|NO|gen_random_uuid()
+pets|is_spayed_neutered|boolean|YES|-
+pets|microchip_id|text|YES|-
+pets|name|text|NO|-
+pets|owner_id|uuid|NO|-
+pets|owner_username|character varying|YES|-
+pets|personality|text|YES|-
+pets|species|text|YES|-
+pets|updated_at|timestamp with time zone|YES|-
+pets|updated_by|text|YES|-
+role_capabilities|capability|character varying|NO|-
+role_capabilities|role_code|character varying|NO|-
+water_logs|amount|bigint|YES|-
+water_logs|created_at|timestamp with time zone|YES|-
+water_logs|created_by|text|YES|-
+water_logs|date|timestamp with time zone|YES|-
+water_logs|deleted_at|timestamp with time zone|YES|-
+water_logs|id|uuid|NO|gen_random_uuid()
+water_logs|is_active|boolean|YES|true
+water_logs|pet_id|uuid|NO|-
+water_logs|updated_at|timestamp with time zone|YES|-
+water_logs|updated_by|text|YES|-
+--- indexes ---
+caregiver_permissions_pkey|CREATE UNIQUE INDEX caregiver_permissions_pkey ON caregiver_permissions USING btree (pet_caregiver_id, pet_permission_id)
+event_outbox_pkey|CREATE UNIQUE INDEX event_outbox_pkey ON event_outbox USING btree (id)
+idx_litter_logs_deleted_at|CREATE INDEX idx_litter_logs_deleted_at ON litter_logs USING btree (deleted_at)
+idx_litter_logs_pet_id|CREATE INDEX idx_litter_logs_pet_id ON litter_logs USING btree (pet_id)
+idx_litter_pet_date|CREATE INDEX idx_litter_pet_date ON litter_logs USING btree (pet_id, date DESC)
+idx_mst_cat_breeds_active|CREATE INDEX idx_mst_cat_breeds_active ON mst_cat_breeds USING btree (species_code, sort_order) WHERE is_active
+idx_pet_caregivers_deleted_at|CREATE INDEX idx_pet_caregivers_deleted_at ON pet_caregivers USING btree (deleted_at)
+idx_pet_caregivers_pet_active|CREATE INDEX idx_pet_caregivers_pet_active ON pet_caregivers USING btree (pet_id) WHERE (deleted_at IS NULL)
+idx_pet_caregivers_user_active|CREATE INDEX idx_pet_caregivers_user_active ON pet_caregivers USING btree (user_id) WHERE (deleted_at IS NULL)
+idx_pet_caregivers_user_id|CREATE INDEX idx_pet_caregivers_user_id ON pet_caregivers USING btree (user_id)
+idx_pet_user_active|CREATE UNIQUE INDEX idx_pet_user_active ON pet_caregivers USING btree (pet_id, user_id) WHERE (deleted_at IS NULL)
+idx_pets_deleted_at|CREATE INDEX idx_pets_deleted_at ON pets USING btree (deleted_at)
+idx_pets_owner_active|CREATE INDEX idx_pets_owner_active ON pets USING btree (owner_id) WHERE (deleted_at IS NULL)
+idx_pets_owner_id|CREATE INDEX idx_pets_owner_id ON pets USING btree (owner_id)
+idx_pets_owner_username|CREATE INDEX idx_pets_owner_username ON pets USING btree (owner_username)
+idx_role_capabilities_role|CREATE INDEX idx_role_capabilities_role ON role_capabilities USING btree (role_code)
+idx_water_logs_deleted_at|CREATE INDEX idx_water_logs_deleted_at ON water_logs USING btree (deleted_at)
+idx_water_logs_pet_id|CREATE INDEX idx_water_logs_pet_id ON water_logs USING btree (pet_id)
+idx_water_pet_date|CREATE INDEX idx_water_pet_date ON water_logs USING btree (pet_id, date DESC)
+ix_event_outbox_pending|CREATE INDEX ix_event_outbox_pending ON event_outbox USING btree (next_attempt_at, created_at) WHERE (published_at IS NULL)
+ix_event_outbox_published_at|CREATE INDEX ix_event_outbox_published_at ON event_outbox USING btree (published_at) WHERE (published_at IS NOT NULL)
+ix_litter_logs_pet_date_id|CREATE INDEX ix_litter_logs_pet_date_id ON litter_logs USING btree (pet_id, date DESC, id DESC)
+ix_water_logs_pet_date_id|CREATE INDEX ix_water_logs_pet_date_id ON water_logs USING btree (pet_id, date DESC, id DESC)
+litter_logs_pkey|CREATE UNIQUE INDEX litter_logs_pkey ON litter_logs USING btree (id)
+mst_blood_types_pkey|CREATE UNIQUE INDEX mst_blood_types_pkey ON mst_blood_types USING btree (code)
+mst_cat_breeds_pkey|CREATE UNIQUE INDEX mst_cat_breeds_pkey ON mst_cat_breeds USING btree (code)
+mst_genders_pkey|CREATE UNIQUE INDEX mst_genders_pkey ON mst_genders USING btree (code)
+mst_litter_types_pkey|CREATE UNIQUE INDEX mst_litter_types_pkey ON mst_litter_types USING btree (code)
+mst_species_pkey|CREATE UNIQUE INDEX mst_species_pkey ON mst_species USING btree (code)
+orphaned_logs_quarantine_pkey|CREATE UNIQUE INDEX orphaned_logs_quarantine_pkey ON orphaned_logs_quarantine USING btree (id)
+pet_caregivers_pkey|CREATE UNIQUE INDEX pet_caregivers_pkey ON pet_caregivers USING btree (id)
+pet_permissions_pkey|CREATE UNIQUE INDEX pet_permissions_pkey ON pet_permissions USING btree (id)
+pets_pkey|CREATE UNIQUE INDEX pets_pkey ON pets USING btree (id)
+role_capabilities_pkey|CREATE UNIQUE INDEX role_capabilities_pkey ON role_capabilities USING btree (role_code, capability)
+water_logs_pkey|CREATE UNIQUE INDEX water_logs_pkey ON water_logs USING btree (id)
+--- constraints ---
+caregiver_permissions_pkey|p|PRIMARY KEY (pet_caregiver_id, pet_permission_id)
+chk_litter_amount|c|CHECK ((amount > 0))
+chk_water_amount|c|CHECK ((amount > 0))
+event_outbox_pkey|p|PRIMARY KEY (id)
+fk_caregiver_permissions_caregiver_model|f|FOREIGN KEY (caregiver_model_id) REFERENCES pet.pet_caregivers(id) ON DELETE CASCADE
+fk_caregiver_permissions_permission_model|f|FOREIGN KEY (permission_model_id) REFERENCES pet.pet_permissions(id) ON DELETE CASCADE
+fk_caregiver_permissions_pet_caregiver|f|FOREIGN KEY (pet_caregiver_id) REFERENCES pet.pet_caregivers(id) ON DELETE CASCADE
+fk_caregiver_permissions_pet_permission|f|FOREIGN KEY (pet_permission_id) REFERENCES pet.pet_permissions(id) ON DELETE CASCADE
+fk_litter_logs_pet|f|FOREIGN KEY (pet_id) REFERENCES pet.pets(id) ON DELETE CASCADE
+fk_litter_logs_type|f|FOREIGN KEY (type) REFERENCES pet.mst_litter_types(code) NOT VALID
+fk_mst_cat_breeds_species|f|FOREIGN KEY (species_code) REFERENCES pet.mst_species(code)
+fk_pets_caregivers|f|FOREIGN KEY (pet_id) REFERENCES pet.pets(id) ON DELETE CASCADE
+fk_pets_gender|f|FOREIGN KEY (gender) REFERENCES pet.mst_genders(code) NOT VALID
+fk_pets_litter_logs|f|FOREIGN KEY (pet_id) REFERENCES pet.pets(id) ON DELETE CASCADE
+fk_pets_species|f|FOREIGN KEY (species) REFERENCES pet.mst_species(code) NOT VALID
+fk_water_logs_pet|f|FOREIGN KEY (pet_id) REFERENCES pet.pets(id) ON DELETE CASCADE
+flyway_schema_history_pk|p|PRIMARY KEY (installed_rank)
+litter_logs_pkey|p|PRIMARY KEY (id)
+mst_blood_types_pkey|p|PRIMARY KEY (code)
+mst_cat_breeds_pkey|p|PRIMARY KEY (code)
+mst_genders_pkey|p|PRIMARY KEY (code)
+mst_litter_types_pkey|p|PRIMARY KEY (code)
+mst_species_pkey|p|PRIMARY KEY (code)
+orphaned_logs_quarantine_pkey|p|PRIMARY KEY (id)
+pet_caregivers_pkey|p|PRIMARY KEY (id)
+pet_permissions_pkey|p|PRIMARY KEY (id)
+pets_pkey|p|PRIMARY KEY (id)
+role_capabilities_pkey|p|PRIMARY KEY (role_code, capability)
+water_logs_pkey|p|PRIMARY KEY (id)
+--- sequences ---
+orphaned_logs_quarantine_id_seq
