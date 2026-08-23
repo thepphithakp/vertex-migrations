@@ -5,18 +5,26 @@
 -- ที่รันด้วยมือครั้งเดียวตอนตั้งระบบ ไม่ใช่ migration
 --
 -- วิธีรัน:
---   psql "$SUPERUSER_DSN" -v migrator_pw="'...'" -v app_pw="'...'" -f 000_create_roles.sql
+--   psql "$SUPERUSER_DSN" -v migrator_pw=... -v app_pw=... -f 000_create_roles.sql
+--   (ไม่ต้องใส่ single quote ครอบค่า — :'ชื่อตัวแปร' ใส่ให้เองแล้ว)
 -- =============================================================================
 
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'pet_migrator') THEN
-        EXECUTE format('CREATE ROLE pet_migrator LOGIN PASSWORD %L', :migrator_pw);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'pet_app') THEN
-        EXECUTE format('CREATE ROLE pet_app LOGIN PASSWORD %L', :app_pw);
-    END IF;
-END $$;
+-- ⚠️ ห้ามใช้ :ตัวแปร ข้างใน DO $$ ... $$
+--
+-- psql แทนค่าตัวแปรตอน lex เท่านั้น และมันมองข้อความใน dollar quote
+-- เป็น token เดียว จึงไม่แทนค่าให้ ผลคือ syntax error at or near ":"
+-- (บั๊กนี้ทำให้ bootstrap ทั้งชุดรันบนคลัสเตอร์ใหม่ไม่ได้ เจอ 2026-08-23)
+--
+-- วิธีที่ถูกคือสร้างคำสั่งด้วย SELECT format(...) ที่อยู่นอก dollar quote
+-- แล้วให้ \gexec เอาไปรัน
+
+SELECT format('CREATE ROLE pet_migrator LOGIN PASSWORD %L', :'migrator_pw')
+WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'pet_migrator')
+\gexec
+
+SELECT format('CREATE ROLE pet_app LOGIN PASSWORD %L', :'app_pw')
+WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'pet_app')
+\gexec
 
 -- ⚠️ GRANT ALL ไม่พอสำหรับ Flyway
 --

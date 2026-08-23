@@ -74,8 +74,9 @@ info() {
        Password  kubectl get secret postgres-secret -n $NAMESPACE \\
                    -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d
 
-     schema: pet (ข้อมูลสัตว์เลี้ยง) · public (ผู้ใช้/สิทธิ์/event)
-     vertex_readonly ตั้ง search_path = pet, public ไว้แล้ว
+     schema: pet (ข้อมูลสัตว์เลี้ยง) · auth (ผู้ใช้/สิทธิ์) · public (event)
+     vertex_readonly ตั้ง search_path = pet, auth, public ไว้แล้ว
+     สร้าง role นี้ใหม่ได้จาก cluster/bootstrap/000_create_readonly_role.sql
 
 INFO
 }

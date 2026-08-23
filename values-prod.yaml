@@ -22,5 +22,11 @@ services:
     schema: pet
     historyTable: flyway_schema_history
     credentialsSecret: pet-db-migrator
-    # ตารางย้ายจาก public มาแล้ว → ต้อง baseline ที่ V1 เพื่อข้ามการสร้างตารางซ้ำ
-    baselineOnMigrate: true
+    # ปิดแล้วหลังย้าย schema เสร็จ (2026-08-23)
+    #
+    # เปิดไว้ตอนย้ายตารางจาก public มา pet เพื่อให้ Flyway baseline ที่ V1
+    # แล้วข้ามการสร้างตารางซ้ำ ตอนนี้ history มี V1–V8 ครบแล้ว ค่านี้จึงไม่มีผล
+    # แต่ถ้าปล่อยเป็น true ไว้ วันไหน history table หายหรือถูกสร้างใหม่
+    # Flyway จะ baseline ที่ V1 แล้ว "ข้าม V2–V8 เงียบๆ" โดยไม่ error
+    # เหลือ schema ที่ไม่ครบโดยไม่มีสัญญาณเตือน
+    baselineOnMigrate: false
