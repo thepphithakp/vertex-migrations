@@ -13,7 +13,11 @@ on:
     paths:
       - 'pet/**'
       - 'auth/**'
+      - 'event/**'
       - 'helm/**'
+      # ค่าตั้งของแต่ละ service อยู่ที่นี่ — แก้แล้วต้อง deploy ตาม
+      # ไม่งั้นเปลี่ยน schema หรือ baselineOnMigrate แล้วไม่มีอะไรเกิดขึ้น
+      - 'values-prod.yaml'
       - 'Dockerfile'
       # แก้ pipeline แล้วต้องได้ทดสอบทันที ไม่ใช่รอจนกว่าจะมีคนแก้ SQL
       - '.github/workflows/deploy.yml'
