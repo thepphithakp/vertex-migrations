@@ -59,6 +59,23 @@ jobs:
             "SELECT count(*) FROM information_schema.tables WHERE table_name LIKE 'flyway%'")
           [ "$got" = "2" ] || { echo "🔴 พบ flyway history $got ตาราง ต้องการ 2"; exit 1; }
 
+      # gate ที่กัน "cluster ใหม่ได้ schema ต่างจาก production"
+      #
+      # production baseline ที่ V1 แล้วรัน V2..Vn ส่วน cluster ใหม่รันทั้งหมด
+      # ถ้ามีคนแก้ V__ ที่ apply ไปแล้ว หรือเขียน migration ที่ทำงานได้เฉพาะบน
+      # database ที่มีข้อมูลอยู่ สองเส้นทางจะจบที่ schema คนละแบบ
+      # แล้วบั๊กจะโผล่เฉพาะ environment เดียวโดยหาสาเหตุยากมาก
+      #
+      # เจอจริงมาแล้ว: caregiver_permissions บน production มีคอลัมน์ซากจาก
+      # AutoMigrate ที่ทำให้ตั้งสิทธิ์ผู้ดูแลไม่ได้เลย (แก้ด้วย V11)
+      # และ V11 เองก็รันบน database เปล่าไม่ได้จนกว่าจะแก้ (V11 รอบสอง)
+      - name: Schema ของ database เปล่าตรงกับ production
+        run: |
+          set -euo pipefail
+          PGHOST=localhost PGPORT=5432 PGUSER=vertex PGPASSWORD=vertex \
+            DOCKER_NETWORK=host SERVICE=pet SCHEMA=pet \
+            bash scripts/verify-schema.sh
+
   build:
     name: Build migration image
     needs: test
