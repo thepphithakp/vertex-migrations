@@ -61,6 +61,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: ตรวจว่าไม่มีความลับหลุดเข้า repo
+        run: ./scripts/check-secrets.sh
+
       - name: Lint migration files
         run: bash scripts/lint.sh
 
