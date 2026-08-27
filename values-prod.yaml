@@ -1,4 +1,4 @@
-# ค่าสำหรับ cluster production (k3s pluem-etoys)
+# ค่าสำหรับ cluster production
 image:
   tag: latest   # override ด้วย --set image.tag=sha-<commit> ตอน deploy
 
