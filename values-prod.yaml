@@ -42,3 +42,12 @@ services:
     # แล้วข้ามการสร้างตารางซ้ำ ถ้าปล่อยเป็น true ไว้ วันไหน history table หาย
     # Flyway จะ baseline ที่ V1 แล้วข้าม V2 เงียบๆ โดยไม่ error
     baselineOnMigrate: false
+
+  - name: notification
+    enabled: true
+    schema: notification
+    historyTable: flyway_schema_history
+    credentialsSecret: notification-db-migrator
+    # service ใหม่ ไม่มีตารางเดิมที่ AutoMigrate สร้างไว้ให้ต้อง baseline
+    # database ว่างเปล่าตั้งแต่ต้น — ปิดไว้เหมือน cluster ใหม่ของ service อื่น
+    baselineOnMigrate: false

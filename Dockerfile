@@ -13,6 +13,8 @@ COPY auth/migration  /flyway/sql/auth/migration
 COPY auth/codeowned  /flyway/sql/auth/codeowned
 COPY event/migration /flyway/sql/event/migration
 COPY event/codeowned /flyway/sql/event/codeowned
+COPY notification/migration /flyway/sql/notification/migration
+COPY notification/codeowned /flyway/sql/notification/codeowned
 
 # ⚠️ เพิ่ม service ใหม่ต้องเพิ่ม COPY ที่นี่ด้วย
 #    ถ้าลืม Flyway จะขึ้น "Skipping filesystem location ... (not found)"
