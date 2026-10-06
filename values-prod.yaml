@@ -58,3 +58,10 @@ services:
     historyTable: flyway_schema_history
     credentialsSecret: ev-db-migrator
     baselineOnMigrate: false
+
+  - name: chat
+    enabled: true
+    schema: chat
+    historyTable: flyway_schema_history
+    credentialsSecret: chat-db-migrator
+    baselineOnMigrate: false

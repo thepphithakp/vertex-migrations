@@ -16,6 +16,7 @@ on:
       - 'event/**'
       - 'notification/**'
       - 'ev/**'
+      - 'chat/**'
       - 'helm/**'
       # ค่าตั้งของแต่ละ service อยู่ที่นี่ — แก้แล้วต้อง deploy ตาม
       # ไม่งั้นเปลี่ยน schema หรือ baselineOnMigrate แล้วไม่มีอะไรเกิดขึ้น
