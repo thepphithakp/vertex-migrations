@@ -51,3 +51,10 @@ services:
     # service ใหม่ ไม่มีตารางเดิมที่ AutoMigrate สร้างไว้ให้ต้อง baseline
     # database ว่างเปล่าตั้งแต่ต้น — ปิดไว้เหมือน cluster ใหม่ของ service อื่น
     baselineOnMigrate: false
+
+  - name: ev
+    enabled: true
+    schema: ev
+    historyTable: flyway_schema_history
+    credentialsSecret: ev-db-migrator
+    baselineOnMigrate: false

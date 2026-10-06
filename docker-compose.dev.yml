@@ -79,5 +79,27 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
 
+  # ev — service ใหม่ ไม่มี seed ต้องการ
+  flyway-ev:
+    image: flyway/flyway:11-alpine
+    command: migrate
+    volumes:
+      - ./ev/migration:/flyway/sql/migration:ro
+      - ./ev/codeowned:/flyway/sql/codeowned:ro
+    environment:
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/vertex
+      FLYWAY_USER: vertex
+      FLYWAY_PASSWORD: vertex
+      FLYWAY_SCHEMAS: ev
+      FLYWAY_DEFAULT_SCHEMA: ev
+      FLYWAY_TABLE: flyway_schema_history
+      FLYWAY_LOCATIONS: filesystem:/flyway/sql/migration,filesystem:/flyway/sql/codeowned
+      FLYWAY_BASELINE_ON_MIGRATE: "true"
+      FLYWAY_BASELINE_VERSION: "1"
+      FLYWAY_CLEAN_DISABLED: "true"
+      FLYWAY_CONNECT_RETRIES: "20"
+    depends_on:
+      postgres: { condition: service_healthy }
+
 volumes:
   pgdata:
